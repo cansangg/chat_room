@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提瓦特通信终端 - Chat Room</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #e2e8f0; }
+
+        body::before {
+            content: ''; position: absolute; width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            top: -100px; left: -100px; z-index: -1; animation: floatGlow 10s ease-in-out infinite alternate;
+        }
+        @keyframes floatGlow { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(50px) scale(1.1); } }
+        
+        #login-container { 
+            background: rgba(30, 27, 75, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(167, 139, 250, 0.2);
+            padding: 40px 30px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); 
+            width: 380px; text-align: center; animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #login-container h2 { margin-bottom: 25px; color: #f3e8ff; font-weight: 600; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(168, 85, 247, 0.4); }
+        .input-group { margin-bottom: 20px; }
+        .input-group input { width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; color: #fff; outline: none; transition: all 0.3s; }
+        .input-group input:focus { border-color: #c084fc; box-shadow: 0 0 12px rgba(192, 132, 252, 0.3); }
+        
+        .btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; letter-spacing: 1px; margin-top: 10px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(217, 70, 239, 0.6); }
+        #status-text { margin-top: 20px; color: #94a3b8; font-size: 13px; }
+
+        #app-container { display: none; width: 960px; height: 640px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); overflow: hidden; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+        #sidebar { width: 280px; background: rgba(30, 27, 75, 0.4); border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; background: rgba(15, 23, 42, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-weight: 600; font-size: 14px; color: #cbd5e1; }
+        .sidebar-header button { background: rgba(255, 255, 255, 0.1); border: none; color: #cbd5e1; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .sidebar-header button:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+        #room-list { flex: 1; overflow-y: auto; list-style: none; padding: 10px; }
+        .room-item { padding: 12px 16px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; transition: all 0.2s; color: #94a3b8; font-size: 14px; position: relative;}
+        .room-item:hover { background: rgba(139, 92, 246, 0.15); color: #e2e8f0; }
+        .room-item.active { background: linear-gradient(90deg, rgba(139, 92, 246, 0.3), transparent); border-left: 3px solid #c084fc; color: #fff; font-weight: 600; }
+        
+        .create-room-box { padding: 15px; background: rgba(15, 23, 42, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        .create-room-box input { width: 100%; padding: 8px 12px; margin-bottom: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; outline: none; font-size: 13px;}
+        
+        #chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.3); }
+        #chat-header { padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-weight: 600; font-size: 16px; color: #f3e8ff; background: rgba(15, 23, 42, 0.2); }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+        
+        .msg-box { max-width: 70%; padding: 12px 16px; border-radius: 14px; position: relative; clear: both; word-wrap: break-word; font-size: 14px; line-height: 1.5; }
+        .msg-self { background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); } 
+        .msg-other { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.05); color: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 4px; } 
+        .msg-sender { font-size: 11px; margin-bottom: 4px; display: block; opacity: 0.8; }
+        .msg-self .msg-sender { color: #e9d5ff; text-align: right; }
+        .msg-other .msg-sender { color: #cbd5e1; text-align: left; }
+
+        #input-area { padding: 15px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; gap: 12px; background: rgba(15, 23, 42, 0.4); }
+        #input-area input { flex: 1; padding: 10px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #fff; outline: none; }
+        #input-area input:focus { border-color: #a855f7; }
+        #input-area button { padding: 8px 20px; background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4); transition: 0.2s; }
+        #input-area button:hover { opacity: 0.9; transform: scale(1.02); }
+        
+        .empty-state { display: flex; align-items: center; justify-content: center; flex: 1; color: #64748b; font-size: 16px; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body>
+
+    <div id="login-container">
+        <h2>✨ 提瓦特通信终端</h2>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="旅行者代号 (用户名)" value="奶龙">
+        </div>
+        <div class="input-group">
+            <input type="text" id="password" placeholder="通行秘钥 (密码)" value="666">
+        </div>
+        <button class="btn" onclick="connectAndLogin()">接入虚空星网</button>
+        <div id="status-text">状态: 终端离线</div>
+    </div>
+
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                频道网格 (<span id="my-name" style="color: #c084fc;"></span>)
+                <button onclick="logout()" style="float:right; background:rgba(239, 68, 68, 0.2); color:#fca5a5;">登出</button>
+                <button onclick="getRooms()" style="float:right; margin-right:6px;">刷新</button>
+            </div>
+            <ul id="room-list"></ul>
+            <div class="create-room-box">
+                <input type="text" id="new-room-name" placeholder="新建频道名称">
+                <input type="text" id="new-room-members" placeholder="邀请成员 (逗号分隔)">
+                <button class="btn" style="padding:6px; font-size:13px; margin-top:2px;" onclick="createRoom()">建立跃迁频道</button>
+            </div>
+        </div>
+
+        <div id="chat-area">
+            <div id="chat-header">请选择一个星域频道</div>
+            <div id="messages" class="empty-state">等待接入量子通讯流...</div>
+            <div id="input-area" style="display:none;">
+                <input type="text" id="msg-input" placeholder="输入你想传递的星际讯息..." onkeypress="if(event.keyCode==13) sendMsg()">
+                <button onclick="sendMsg()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局配置 ====================
+        const SERVER_IP = "111.230.232.136";   // 改这里即可
+        const SERVER_PORT = 8080;
+        const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}`;
+        // ==================================================
+
+        let ws = null;
+        let reqIdCounter = 0;
+        let currentUser = "";
+        let currentRoomId = null;
+        let heartbeatTimer = null;
+
+        function getReqId() { return "req_" + (++reqIdCounter); }
+
+        function sendWsMsg(action, data = null) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const payload = { action: action, req_id: getReqId() };
+            if (data) payload.data = data;
+            ws.send(JSON.stringify(payload));
+        }
+
+        function connectAndLogin() {
+            const user = document.getElementById("username").value.trim();
+            const pass = document.getElementById("password").value.trim();
+            if (!user || !pass) return alert("请输入旅行者代号与通行秘钥！");
+
+            document.getElementById("status-text").innerText = "正在建立量子通道 " + WS_URL + " ...";
+            
+            if (ws) ws.close();
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
+
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                document.getElementById("status-text").innerText = "通道已连接，正在校验身份...";
+                currentUser = user;
+                sendWsMsg("login/register/logout", { name: user, password: pass });
+
+                heartbeatTimer = setInterval(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) sendWsMsg("ping"); 
+                }, 5000);
+            };
+
+            ws.onmessage = (event) => {
+                const res = JSON.parse(event.data);
+                if (res.action === "ping") return; 
+                handleServerMessage(res);
+            };
+
+            ws.onclose = () => {
+                if (heartbeatTimer) clearInterval(heartbeatTimer);
+                if (currentUser !== "") {
+                    document.getElementById("status-text").innerText = "连接已断开";
+                    document.getElementById("login-container").style.display = "block";
+                    document.getElementById("app-container").style.display = "none";
+                }
+            };
+            ws.onerror = () => { document.getElementById("status-text").innerText = "量子通道构建失败！"; };
+        }
+
+        function logout() {
+            if (ws) { ws.close(); ws = null; }
+            if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+            currentUser = ""; currentRoomId = null;
+            document.getElementById("app-container").style.display = "none";
+            document.getElementById("login-container").style.display = "block";
+            document.getElementById("status-text").innerText = "终端已断开";
+        }
+
+        function handleServerMessage(res) {
+            if (res.status === "error" || res.status === "fail") {
+                alert("虚空反馈异常: " + res.message);
+                return;
+            }
+
+            switch (res.action) {
+                case "login/register/logout":
+                    document.getElementById("login-container").style.display = "none";
+                    document.getElementById("app-container").style.display = "flex";
+                    document.getElementById("my-name").innerText = currentUser;
+                    getRooms(); 
+                    break;
+                
+                case "get_rooms":
+                    renderRoomList(res.data.rooms);
+                    break;
+
+                case "pull_room_history":
+                    renderMessages(res.data.messages);
+                    break;
+
+                case "send_msg":
+                    const content = document.getElementById("msg-input").value;
+                    appendMessage(currentUser, content, true);
+                    document.getElementById("msg-input").value = "";
+                    break;
+
+                case "receive_room":
+                    appendRoom(res.data.room_id, res.data.room_name, true);
+                    break;
+
+                case "receive_msg":
+                    if (res.data.room_id == currentRoomId) {
+                        appendMessage(res.data.sender_name, res.data.content, false);
+                    } else {
+                        const unreadRoom = document.getElementById(`room-${res.data.room_id}`);
+                        if (unreadRoom && !unreadRoom.innerText.includes("💬")) {
+                            unreadRoom.innerHTML += ` <span style="color:#fbcfe8; font-size:12px;">💬</span>`;
+                        }
+                    }
+                    break;
+
+                case "create_room":
+                    alert("跃迁频道创建成功！");
+                    getRooms(); 
+                    break;
+            }
+        }
+
+        function getRooms() { sendWsMsg("get_rooms"); }
+
+        function createRoom() {
+            const name = document.getElementById("new-room-name").value.trim();
+            const memStr = document.getElementById("new-room-members").value.trim();
+            if (!name) return alert("频道名称不能为空");
+            
+            let members = memStr.split(/[,，]/).map(s => s.trim()).filter(s => s !== "");
+            if (!members.includes(currentUser)) members.push(currentUser); 
+            sendWsMsg("create_room", { room_name: name, members: members });
+        }
+
+        function selectRoom(roomId, roomName) {
+            currentRoomId = roomId;
+            document.getElementById("chat-header").innerText = `当前星域: ${roomName} (ID: ${roomId})`;
+            
+            const msgBox = document.getElementById("messages");
+            msgBox.innerHTML = ""; 
+            msgBox.classList.remove("empty-state");
+            document.getElementById("input-area").style.display = "flex";
+
+            document.querySelectorAll('.room-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            const activeRoom = document.getElementById(`room-${roomId}`);
+            if (activeRoom) {
+                activeRoom.classList.add('active');
+                activeRoom.innerText = "✦ " + roomName;
+            }
+
+            sendWsMsg("pull_room_history", { room_id: roomId });
+        }
+
+        function sendMsg() {
+            const input = document.getElementById("msg-input");
+            const content = input.value.trim();
+            if (!content || currentRoomId === null) return;
+            sendWsMsg("send_msg", { room_id: currentRoomId, content: content });
+        }
+
+        function appendRoom(roomId, roomName, isNew = false) {
+            const ul = document.getElementById("room-list");
+            if (ul.innerHTML.includes("暂无星域频道")) ul.innerHTML = "";
+            if (document.getElementById(`room-${roomId}`)) return;
+
+            const li = document.createElement("li");
+            li.className = "room-item";
+            li.id = `room-${roomId}`;
+            
+            if (isNew) {
+                li.innerHTML = `✦ ${roomName} <span style="color:#f472b6; font-size:12px; margin-left:4px;">🆕</span>`;
+            } else {
+                li.innerText = "✦ " + roomName;
+            }
+
+            li.onclick = () => selectRoom(roomId, roomName);
+            ul.appendChild(li);
+        }
+
+        function renderRoomList(rooms) {
+            const ul = document.getElementById("room-list");
+            ul.innerHTML = "";
+            if(!rooms || rooms.length === 0) {
+                ul.innerHTML = "<div style='padding:15px;color:#64748b;text-align:center;'>暂无星域频道</div>";
+                return;
+            }
+            rooms.forEach((room, index) => {
+                appendRoom(room.id, room.name);
+                if (index === 0) selectRoom(room.id, room.name);
+            });
+        }
+
+        function renderMessages(messages) {
+            const msgBox = document.getElementById("messages");
+            msgBox.innerHTML = "";
+            if(!messages || messages.length === 0) return;
+            
+            messages.reverse().forEach(msg => {
+                let isSelf = (msg.sender_name === currentUser);
+                appendMessage(msg.sender_name, msg.content, isSelf);
+            });
+        }
+
+        function appendMessage(senderName, content, isSelf) {
+            const msgBox = document.getElementById("messages");
+            const div = document.createElement("div");
+            div.className = "msg-box " + (isSelf ? "msg-self" : "msg-other");
+            const displayName = isSelf ? senderName + " (我)" : senderName;
+            div.innerHTML = `<span class="msg-sender">${displayName}</span>${content}`;
+            msgBox.appendChild(div);
+            msgBox.scrollTop = msgBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>

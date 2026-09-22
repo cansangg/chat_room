@@ -1,0 +1,1 @@
+g++ server.cpp -std=c++23 -pthread -lmysqlclient -lhiredis -o server.exe && ./server.exe
