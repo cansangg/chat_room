@@ -190,6 +190,9 @@ public:
             if (err_no == 2006 || err_no == 2013) {
                 throw std::runtime_error("connection_broken");
             }
+            if (err_no == 1213 || err_no == 1205) {
+                throw std::runtime_error("Deadlock");
+            }
             throw std::runtime_error("查询 SQL 失败: " + std::string(mysql_error(conn)) + "\nSQL: " + sql);
         }
 
