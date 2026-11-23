@@ -98,9 +98,6 @@ public:
             throw std::runtime_error("重新初始化失败: 内存不足");
         }
 
-        bool reconnect_flag = true;
-        mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect_flag);
-
         // 3. 用当初保存下来的凭证重新登录。
         // 注意：这里我们直接把 db_ 传进去了，因为第一次 connect 时库肯定已经建好了
         if (mysql_real_connect(conn, host_.c_str(), user_.c_str(), passwd_.c_str(), 
@@ -159,6 +156,9 @@ public:
             if (err_no == 2006 || err_no == 2013) {
                 throw std::runtime_error("connection_broken");
             }
+            if (err_no == 1213 || err_no == 1205) {
+                throw std::runtime_error("Deadlock");
+            }
             throw std::runtime_error("执行 SQL 失败: " + std::string(mysql_error(conn)) + "\nSQL: " + sql);
         }
         return mysql_affected_rows(conn);
@@ -200,6 +200,9 @@ public:
             unsigned int err_no = mysql_errno(conn);
             if (err_no == 2006 || err_no == 2013) {
                 throw std::runtime_error("connection_broken");
+            }
+            if (err_no == 1213 || err_no == 1205) {
+                throw std::runtime_error("Deadlock");
             }
             throw std::runtime_error("获取结果集失败: " + std::string(mysql_error(conn)));
         }
