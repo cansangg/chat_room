@@ -18,11 +18,7 @@ using json = nlohmann::json;
 // 🌟 工业级事务重试引擎：精准拦截断网与死锁
 // ==============================================================================
 void process(const std::function<void(MysqlClient&)>& f, MysqlClient& db) {
-    int max_retries = 3;
-    int attempts = 0;
-
-    while (attempts < max_retries) {
-        attempts++;
+    while (true) {
         try {
             db.begin();
             f(db);
@@ -32,22 +28,21 @@ void process(const std::function<void(MysqlClient&)>& f, MysqlClient& db) {
             std::string err = e.what();
             
             if (err.find("connection_broken") != std::string::npos) {
-                db.reconnect();
+                db.reconnect(); //我永在
                 continue; 
             } 
             else if (err.find("Deadlock") != std::string::npos) {
-                try { db.rollback(); } catch (...) {} 
+                db.rollback(); //连不断
                 continue; 
-            } 
-            else {
-                try { db.rollback(); } catch (...) {}
+            } else {
+                db.rollback(); //主动回滚
                 throw std::runtime_error(err); 
             }
         }
     }
-    throw std::runtime_error("事务重试次数耗尽，彻底失败");
 }
 // ==============================================================================
+
 
 int main() {
     Sock server;
