@@ -3,118 +3,469 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>提瓦特通信终端 - Chat Room</title>
+    <meta http-equiv="Cache-Control" content="no-store">
+    <title>暖屿 HEARTH · 企业协作通讯</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        
-        body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body::before {
-            content: ''; position: absolute; width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
-            top: -100px; left: -100px; z-index: -1; animation: floatGlow 10s ease-in-out infinite alternate;
+        :root {
+            --canvas: #f7f1e9;
+            --ink: #241d18;
+            --ink-soft: #544a41;
+            --muted: #93877b;
+            --line: rgba(74, 53, 38, .10);
+            --line-strong: rgba(74, 53, 38, .16);
+            --card: #fffdf9;
+            --accent: #dd6b45;
+            --accent-2: #c4512e;
+            --accent-soft: #fbe7dc;
+            --ok: #4d9a6a;
+            --danger: #c0564b;
+            --shadow-xl: 0 40px 90px -40px rgba(72, 42, 20, .38), 0 12px 30px -16px rgba(72, 42, 20, .18);
+            --font: "Inter", "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
         }
-        @keyframes floatGlow { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(50px) scale(1.1); } }
-        
-        #login-container { 
-            background: rgba(30, 27, 75, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(167, 139, 250, 0.2);
-            padding: 40px 30px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); 
-            width: 380px; text-align: center; animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+        html { height: 100%; }
+
+        body {
+            font-family: var(--font);
+            color: var(--ink);
+            background:
+                radial-gradient(1100px 720px at 6% -12%, #ffe6d0 0%, rgba(255, 230, 208, 0) 55%),
+                radial-gradient(950px 650px at 102% -4%, #fbdcc8 0%, rgba(251, 220, 200, 0) 52%),
+                radial-gradient(900px 700px at 50% 118%, #f0dfc9 0%, rgba(240, 223, 201, 0) 60%),
+                linear-gradient(160deg, #faf5ee 0%, #f4ece1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
-        #login-container h2 { margin-bottom: 25px; color: #f3e8ff; font-weight: 600; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(168, 85, 247, 0.4); }
-        .input-group { margin-bottom: 20px; }
-        .input-group input { width: 100%; padding: 12px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; color: #fff; outline: none; transition: all 0.3s; }
-        .input-group input:focus { border-color: #c084fc; box-shadow: 0 0 12px rgba(192, 132, 252, 0.3); }
-        
-        .btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; letter-spacing: 1px; margin-top: 10px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(217, 70, 239, 0.6); }
-        #status-text { margin-top: 20px; color: #94a3b8; font-size: 13px; }
 
-        #app-container { display: none; width: 960px; height: 640px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); overflow: hidden; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+        .bg-orb { position: fixed; border-radius: 50%; filter: blur(70px); pointer-events: none; z-index: 0; opacity: .55; }
+        .orb-1 { width: 420px; height: 420px; left: -120px; bottom: -140px; background: radial-gradient(circle, #f6b98c, transparent 70%); animation: drift 16s ease-in-out infinite alternate; }
+        .orb-2 { width: 360px; height: 360px; right: -100px; top: -120px; background: radial-gradient(circle, #f4c6a6, transparent 70%); animation: drift 20s ease-in-out infinite alternate-reverse; }
+        @keyframes drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(30px, 24px, 0) scale(1.08); } }
 
-        #sidebar { width: 280px; background: rgba(30, 27, 75, 0.4); border-right: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; background: rgba(15, 23, 42, 0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-weight: 600; font-size: 14px; color: #cbd5e1; }
-        .sidebar-header button { background: rgba(255, 255, 255, 0.1); border: none; color: #cbd5e1; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-        .sidebar-header button:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
+        /* ==================== 登录 ==================== */
+        #login-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            width: min(940px, 100%);
+            min-height: 580px;
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, .85);
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            animation: riseIn .7s cubic-bezier(.2, .8, .2, 1);
+        }
+        @keyframes riseIn { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: none; } }
 
-        #room-list { flex: 1; overflow-y: auto; list-style: none; padding: 10px; }
-        .room-item { padding: 12px 16px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; transition: all 0.2s; color: #94a3b8; font-size: 14px; position: relative;}
-        .room-item:hover { background: rgba(139, 92, 246, 0.15); color: #e2e8f0; }
-        .room-item.active { background: linear-gradient(90deg, rgba(139, 92, 246, 0.3), transparent); border-left: 3px solid #c084fc; color: #fff; font-weight: 600; }
-        
-        .create-room-box { padding: 15px; background: rgba(15, 23, 42, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.05); }
-        .create-room-box input { width: 100%; padding: 8px 12px; margin-bottom: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; outline: none; font-size: 13px;}
-        
-        #chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.3); }
-        #chat-header { padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-weight: 600; font-size: 16px; color: #f3e8ff; background: rgba(15, 23, 42, 0.2); }
-        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-        
-        .msg-box { max-width: 70%; padding: 12px 16px; border-radius: 14px; position: relative; clear: both; word-wrap: break-word; font-size: 14px; line-height: 1.5; }
-        .msg-self { background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); } 
-        .msg-other { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.05); color: #f1f5f9; align-self: flex-start; border-bottom-left-radius: 4px; } 
-        .msg-sender { font-size: 11px; margin-bottom: 4px; display: block; opacity: 0.8; }
-        .msg-self .msg-sender { color: #e9d5ff; text-align: right; }
-        .msg-other .msg-sender { color: #cbd5e1; text-align: left; }
+        .login-brand {
+            flex: 1.08;
+            position: relative;
+            overflow: hidden;
+            padding: 46px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 36px;
+            color: #fff6ee;
+            background:
+                radial-gradient(560px 420px at 18% 6%, rgba(247, 176, 116, .55), transparent 62%),
+                radial-gradient(480px 480px at 98% 96%, rgba(190, 74, 42, .52), transparent 62%),
+                linear-gradient(158deg, #2a201a 0%, #3a2a20 46%, #55331f 100%);
+        }
+        .login-brand::before, .login-brand::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .12); pointer-events: none; }
+        .login-brand::before { width: 460px; height: 460px; right: -180px; bottom: -190px; }
+        .login-brand::after { width: 320px; height: 320px; right: -90px; bottom: -120px; border-color: rgba(255, 255, 255, .08); }
 
-        #input-area { padding: 15px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; gap: 12px; background: rgba(15, 23, 42, 0.4); }
-        #input-area input { flex: 1; padding: 10px 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: #fff; outline: none; }
-        #input-area input:focus { border-color: #a855f7; }
-        #input-area button { padding: 8px 20px; background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4); transition: 0.2s; }
-        #input-area button:hover { opacity: 0.9; transform: scale(1.02); }
-        
-        .empty-state { display: flex; align-items: center; justify-content: center; flex: 1; color: #64748b; font-size: 16px; }
+        .brand { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+        .brand-mark {
+            width: 42px; height: 42px; border-radius: 13px; flex: none;
+            display: grid; place-items: center; color: #3a1f12;
+            background: linear-gradient(140deg, #ffd9b0, #f0a45e 55%, #e07a4f);
+            box-shadow: 0 10px 24px -10px rgba(224, 122, 79, .8), inset 0 1px 0 rgba(255, 255, 255, .6);
+        }
+        .brand-mark svg { width: 22px; height: 22px; }
+        .brand-name { display: flex; align-items: baseline; gap: 8px; font-size: 17px; font-weight: 700; letter-spacing: .4px; color: #fff4e9; }
+        .brand-name em { font-style: normal; font-size: 10px; letter-spacing: 2.4px; font-weight: 600; color: rgba(255, 240, 228, .55); }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+        .brand-copy { position: relative; z-index: 1; }
+        .eyebrow-light { margin-bottom: 16px; font-size: 10.5px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: rgba(255, 238, 224, .55); }
+        .brand-copy h1 { font-size: 34px; line-height: 1.32; font-weight: 650; letter-spacing: -.5px; color: #fff6ee; text-wrap: balance; }
+        .brand-sub { margin-top: 16px; max-width: 330px; font-size: 14px; line-height: 1.75; color: rgba(255, 238, 224, .72); }
+        .brand-points { list-style: none; margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
+        .brand-points li { display: flex; align-items: center; gap: 12px; font-size: 13.5px; color: rgba(255, 244, 233, .86); }
+        .pt-ico { width: 28px; height: 28px; border-radius: 9px; flex: none; display: grid; place-items: center; color: #ffd9b5; background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .12); }
+        .pt-ico svg { width: 15px; height: 15px; }
+        .brand-foot { position: relative; z-index: 1; font-size: 11.5px; letter-spacing: 2px; color: rgba(255, 238, 224, .42); }
+
+        .login-form { flex: 1; padding: 52px 48px; display: flex; flex-direction: column; justify-content: center; background: linear-gradient(180deg, #fffdfa, #fdf8f1); }
+        .eyebrow { margin-bottom: 12px; font-size: 10.5px; font-weight: 700; letter-spacing: 2.6px; color: var(--accent); }
+        .login-form h2 { font-size: 27px; font-weight: 680; letter-spacing: -.4px; color: var(--ink); }
+        .form-sub { margin-top: 9px; margin-bottom: 28px; font-size: 13.5px; line-height: 1.6; color: var(--muted); }
+
+        .field { margin-bottom: 16px; }
+        .field label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: .2px; color: var(--ink-soft); }
+        .input-wrap { position: relative; display: flex; align-items: center; }
+        .input-ico { position: absolute; left: 15px; width: 17px; height: 17px; color: #b3a597; pointer-events: none; }
+        .input-wrap input {
+            width: 100%; padding: 13px 15px 13px 43px;
+            font-family: inherit; font-size: 14px; color: var(--ink);
+            background: #fbf6ef; border: 1px solid var(--line-strong); border-radius: 13px; outline: none;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        .input-wrap input::placeholder { color: #b7aa9d; }
+        .input-wrap input:focus { border-color: rgba(221, 107, 69, .65); background: #fff; box-shadow: 0 0 0 4px rgba(221, 107, 69, .12); }
+
+        .btn-primary {
+            width: 100%; margin-top: 8px; padding: 14px 18px;
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            border: none; border-radius: 13px; cursor: pointer;
+            font-family: inherit; font-size: 14.5px; font-weight: 650; letter-spacing: .3px; color: #fff;
+            background: linear-gradient(135deg, #e8835c 0%, #d15d37 100%);
+            box-shadow: 0 14px 26px -12px rgba(207, 90, 53, .85), inset 0 1px 0 rgba(255, 255, 255, .25);
+            transition: transform .18s ease, box-shadow .18s ease, filter .18s;
+        }
+        .btn-primary:hover { transform: translateY(-1px); filter: saturate(1.05); box-shadow: 0 18px 32px -12px rgba(207, 90, 53, .95); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary svg { width: 16px; height: 16px; }
+
+        .status-pill {
+            margin-top: 22px; align-self: flex-start;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 7px 12px; border-radius: 999px;
+            background: #f7f0e7; border: 1px solid var(--line);
+            font-size: 12px; color: var(--muted); transition: .2s;
+        }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #bdb1a4; box-shadow: 0 0 0 3px rgba(189, 177, 164, .18); }
+        .status-pill.is-online { color: #3f7d59; background: rgba(77, 154, 106, .10); border-color: rgba(77, 154, 106, .22); }
+        .status-pill.is-online .status-dot { background: var(--ok); box-shadow: 0 0 0 3px rgba(77, 154, 106, .18); }
+        .status-pill.is-error { color: #a8493f; background: rgba(192, 86, 75, .10); border-color: rgba(192, 86, 75, .2); }
+        .status-pill.is-error .status-dot { background: var(--danger); box-shadow: 0 0 0 3px rgba(192, 86, 75, .16); }
+        .status-pill.is-pending { color: #a6732c; background: rgba(201, 138, 46, .10); border-color: rgba(201, 138, 46, .2); }
+        .status-pill.is-pending .status-dot { background: #c98a2e; animation: pulse 1.2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
+        .form-note { margin-top: 18px; font-size: 11.5px; letter-spacing: .2px; color: #b3a597; }
+
+        /* ==================== 应用 ==================== */
+        #app-container {
+            position: relative; z-index: 1;
+            display: none;
+            width: min(1160px, 100%);
+            height: min(790px, calc(100vh - 56px));
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, .8);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            animation: riseIn .6s cubic-bezier(.2, .8, .2, 1);
+        }
+
+        #sidebar {
+            width: 302px; flex: none;
+            display: flex; flex-direction: column;
+            background: linear-gradient(180deg, #fbf6ef 0%, #f7f0e5 100%);
+            border-right: 1px solid var(--line);
+        }
+
+        .side-brand { display: flex; align-items: center; gap: 11px; padding: 22px 20px 16px; }
+        .brand-mark.small { width: 36px; height: 36px; border-radius: 11px; }
+        .brand-mark.small svg { width: 19px; height: 19px; }
+        .side-brand-name { font-size: 15px; font-weight: 700; letter-spacing: .3px; color: var(--ink); }
+        .side-brand-sub { margin-top: 3px; font-size: 8.5px; font-weight: 600; letter-spacing: 2.2px; color: #b0a294; }
+
+        .me-card {
+            margin: 2px 16px 14px; padding: 10px 11px;
+            display: flex; align-items: center; gap: 10px;
+            background: #fffdfa; border: 1px solid var(--line); border-radius: 16px;
+            box-shadow: 0 6px 16px -14px rgba(72, 42, 20, .4);
+        }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 14px; font-weight: 700; user-select: none; }
+        .me-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .me-name { font-size: 13.5px; font-weight: 650; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .me-status { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--muted); }
+        .me-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(77, 154, 106, .14); }
+
+        .icon-btn { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 10px; border: 1px solid transparent; background: transparent; color: #9b8d80; cursor: pointer; transition: .18s; }
+        .icon-btn:hover { background: rgba(221, 107, 69, .10); color: var(--accent-2); }
+        .icon-btn svg { width: 16px; height: 16px; }
+        .icon-btn.tiny { width: 28px; height: 28px; border-radius: 9px; border-color: var(--line); background: #fffdfa; }
+        .icon-btn.ghost:hover { background: rgba(192, 86, 75, .1); color: var(--danger); }
+
+        .side-section { display: flex; align-items: center; justify-content: space-between; padding: 4px 20px 6px; }
+        .section-label { font-size: 10.5px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: #a99b8d; }
+
+        #room-list { flex: 1; overflow-y: auto; list-style: none; padding: 4px 12px 10px; display: flex; flex-direction: column; gap: 3px; }
+        .room-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; cursor: pointer; color: var(--ink-soft); transition: background .16s, color .16s, box-shadow .16s; }
+        .room-item:hover { background: rgba(221, 107, 69, .08); }
+        .room-icon { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 9px; font-size: 13px; font-weight: 700; color: #b06a45; background: linear-gradient(135deg, #fdf0e6, #f7e2d2); transition: .16s; }
+        .room-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .room-badges { flex: none; display: flex; align-items: center; gap: 6px; }
+        .new-pill { padding: 2px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 700; letter-spacing: .5px; color: #fff; background: linear-gradient(135deg, #e8835c, #d15d37); box-shadow: 0 4px 10px -4px rgba(209, 93, 55, .8); }
+        .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(221, 107, 69, .14); }
+        .room-item.active { color: #fff; background: linear-gradient(135deg, #e8835c 0%, #cf5a35 100%); box-shadow: 0 12px 24px -14px rgba(207, 90, 53, .9); }
+        .room-item.active .room-icon { color: #fff9f4; background: rgba(255, 255, 255, .18); }
+        .room-item.active .room-name { font-weight: 650; color: #fff; }
+        .room-item.active .new-pill { background: rgba(255, 255, 255, .22); box-shadow: none; }
+        .room-item.active .unread-dot { display: none; }
+        .room-empty { padding: 22px 10px; list-style: none; text-align: center; font-size: 12.5px; line-height: 1.6; color: #b3a597; }
+
+        .create-room-box { margin: 10px 14px 14px; padding: 14px; border-radius: 16px; background: #fffdfa; border: 1px solid var(--line); box-shadow: 0 8px 20px -18px rgba(72, 42, 20, .5); }
+        .create-room-box h4 { margin-bottom: 10px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #a99b8d; }
+        .create-room-box input { width: 100%; padding: 9px 12px; margin-bottom: 8px; font-family: inherit; font-size: 12.5px; color: var(--ink); background: #fbf6ef; border: 1px solid var(--line-strong); border-radius: 10px; outline: none; transition: .18s; }
+        .create-room-box input::placeholder { color: #b7aa9d; }
+        .create-room-box input:focus { border-color: rgba(221, 107, 69, .6); background: #fff; box-shadow: 0 0 0 3px rgba(221, 107, 69, .10); }
+        .btn-secondary { width: 100%; padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 650; letter-spacing: .3px; color: #fff; background: linear-gradient(135deg, #df7a52, #c95733); box-shadow: 0 8px 18px -10px rgba(201, 87, 51, .8); transition: .18s; }
+        .btn-secondary:hover { transform: translateY(-1px); filter: saturate(1.05); }
+
+        #chat-area {
+            flex: 1; min-width: 0; display: flex; flex-direction: column;
+            background:
+                radial-gradient(800px 420px at 100% 0%, rgba(253, 233, 216, .55), transparent 60%),
+                linear-gradient(180deg, #fffdfa 0%, #fdf9f3 100%);
+        }
+        #chat-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 17px 24px; background: rgba(255, 253, 250, .82); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
+        .room-identity { display: flex; align-items: center; gap: 13px; min-width: 0; }
+        .room-badge { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 14px; font-size: 17px; font-weight: 700; color: #a9572f; background: linear-gradient(135deg, #fdeade, #f7dcc8); border: 1px solid rgba(221, 107, 69, .16); }
+        .room-titles { min-width: 0; }
+        .room-titles h3 { font-size: 16px; font-weight: 680; letter-spacing: -.2px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .room-titles p { margin-top: 3px; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .header-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+        #messages { flex: 1; overflow-y: auto; padding: 24px 26px 8px; display: flex; flex-direction: column; gap: 18px; }
+        #messages.empty-state { align-items: center; justify-content: center; padding: 24px; }
+        .empty-inner { display: flex; flex-direction: column; align-items: center; max-width: 300px; text-align: center; }
+        .empty-icon { width: 58px; height: 58px; margin-bottom: 16px; display: grid; place-items: center; border-radius: 18px; color: #c98a5e; background: linear-gradient(135deg, #fdf0e6, #f7e0cd); border: 1px solid rgba(221, 107, 69, .14); box-shadow: 0 16px 32px -20px rgba(207, 90, 53, .6); }
+        .empty-icon svg { width: 26px; height: 26px; }
+        .empty-icon.small { width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 15px; }
+        .empty-icon.small svg { width: 22px; height: 22px; }
+        .empty-inner h4, .chat-empty h4 { font-size: 14.5px; font-weight: 650; color: var(--ink-soft); }
+        .empty-inner p, .chat-empty p { margin-top: 6px; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+        .chat-empty { display: flex; flex-direction: column; align-items: center; margin: auto; max-width: 320px; text-align: center; }
+
+        .msg-row { display: flex; align-items: flex-start; gap: 10px; max-width: 100%; animation: msgIn .28s cubic-bezier(.2, .8, .2, 1); }
+        @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .msg-row.self { flex-direction: row-reverse; }
+        .avatar.msg-avatar { width: 34px; height: 34px; margin-top: 2px; border-radius: 50%; font-size: 13px; box-shadow: 0 6px 14px -10px rgba(72, 42, 20, .5); }
+        .msg-body { display: flex; flex-direction: column; min-width: 0; max-width: min(68%, 560px); }
+        .msg-row.self .msg-body { align-items: flex-end; }
+        .msg-meta { margin: 0 2px 5px; font-size: 11px; letter-spacing: .2px; color: var(--muted); }
+        .msg-row.self .msg-meta { text-align: right; }
+        .msg-bubble { padding: 11px 15px; border-radius: 16px; font-size: 13.8px; line-height: 1.6; color: var(--ink); background: #f4ede3; border: 1px solid rgba(74, 53, 38, .06); white-space: pre-wrap; word-break: break-word; box-shadow: 0 6px 16px -16px rgba(72, 42, 20, .4); }
+        .msg-row:not(.self) .msg-bubble { border-bottom-left-radius: 5px; }
+        .msg-row.self .msg-bubble { color: #fff; background: linear-gradient(135deg, #e8835c 0%, #d15d37 100%); border-color: transparent; border-bottom-right-radius: 5px; box-shadow: 0 12px 26px -14px rgba(207, 90, 53, .85), inset 0 1px 0 rgba(255, 255, 255, .18); }
+
+        #input-area { padding: 14px 24px 22px; display: flex; align-items: center; gap: 10px; }
+        .composer { flex: 1; display: flex; align-items: center; gap: 8px; padding: 5px 5px 5px 16px; background: #fff; border: 1px solid var(--line-strong); border-radius: 16px; box-shadow: 0 10px 26px -22px rgba(72, 42, 20, .6); transition: border-color .2s, box-shadow .2s; }
+        .composer:focus-within { border-color: rgba(221, 107, 69, .55); box-shadow: 0 0 0 4px rgba(221, 107, 69, .10), 0 10px 26px -22px rgba(72, 42, 20, .6); }
+        .composer input { flex: 1; min-width: 0; padding: 10px 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 14px; color: var(--ink); }
+        .composer input::placeholder { color: #b7aa9d; }
+        .send-btn { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border: none; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 650; letter-spacing: .3px; color: #fff; background: linear-gradient(135deg, #e8835c, #d15d37); box-shadow: 0 10px 20px -10px rgba(207, 90, 53, .8); transition: .18s; }
+        .send-btn:hover { transform: translateY(-1px); filter: saturate(1.05); }
+        .send-btn svg { width: 14px; height: 14px; }
+
+        * { scrollbar-width: thin; scrollbar-color: rgba(74, 53, 38, .2) transparent; }
+        *::-webkit-scrollbar { width: 8px; height: 8px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: rgba(74, 53, 38, .14); border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }
+        *::-webkit-scrollbar-thumb:hover { background: rgba(74, 53, 38, .24); background-clip: padding-box; }
+
+        @media (max-width: 900px) {
+            #login-container { flex-direction: column; max-width: 460px; min-height: 0; }
+            .login-brand { padding: 30px 30px 26px; gap: 22px; }
+            .login-brand::before { width: 300px; height: 300px; right: -140px; bottom: -160px; }
+            .login-brand::after { display: none; }
+            .brand-copy h1 { font-size: 25px; line-height: 1.35; }
+            .brand-sub { margin-top: 10px; font-size: 13px; }
+            .brand-points, .brand-foot { display: none; }
+            .login-form { padding: 32px 30px 34px; }
+            .login-form h2 { font-size: 23px; }
+            .form-sub { margin-bottom: 22px; }
+            #app-container { height: calc(100vh - 44px); }
+            #sidebar { width: 250px; }
+            .create-room-box { margin: 8px 10px 12px; padding: 12px; }
+            #messages { padding: 20px 18px 8px; }
+            #chat-header { padding: 14px 18px; }
+            #input-area { padding: 12px 18px 18px; }
+        }
+
+        @media (max-width: 680px) {
+            body { padding: 14px; }
+            #app-container { flex-direction: column; height: calc(100vh - 28px); border-radius: 22px; }
+            #sidebar { width: 100%; max-height: 52%; border-right: none; border-bottom: 1px solid var(--line); }
+            .side-brand { padding: 14px 16px 10px; }
+            .me-card { margin: 0 12px 10px; }
+            #chat-area { flex: 1; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="login-container">
-        <h2>✨ 提瓦特通信终端</h2>
-        <div class="input-group">
-            <input type="text" id="username" placeholder="旅行者代号 (用户名)" value="奶龙">
-        </div>
-        <div class="input-group">
-            <input type="text" id="password" placeholder="通行秘钥 (密码)" value="666">
-        </div>
-        <button class="btn" onclick="connectAndLogin()">接入虚空星网</button>
-        <div id="status-text">状态: 终端离线</div>
-    </div>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <main id="login-container">
+        <section class="login-brand">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3.2c1.5 2.1 2.4 3.9 2.4 5.7a2.4 2.4 0 1 1-4.8 0c0-1.8.9-3.6 2.4-5.7Z"/>
+                        <path d="M6.7 11.6A5.6 5.6 0 0 0 12 21a5.6 5.6 0 0 0 5.3-9.4"/>
+                    </svg>
+                </span>
+                <span class="brand-name">暖屿 <em>HEARTH</em></span>
+            </div>
+
+            <div class="brand-copy">
+                <p class="eyebrow-light">Team Communication</p>
+                <h1>让沟通，回到<br>有温度的地方。</h1>
+                <p class="brand-sub">为团队打造的即时通讯空间。简洁、专注，也足够温暖。</p>
+                <ul class="brand-points">
+                    <li>
+                        <span class="pt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12 2.4 2.4 4.6-5"/></svg></span>
+                        实时频道，随时保持同频
+                    </li>
+                    <li>
+                        <span class="pt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.8a3 3 0 0 1 0 5.7"/><path d="M17.5 14.2A5 5 0 0 1 20.5 19"/></svg></span>
+                        私有协作，专注重要对话
+                    </li>
+                    <li>
+                        <span class="pt-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8Z"/></svg></span>
+                        稳定连接，安心专注工作
+                    </li>
+                </ul>
+            </div>
+
+            <div class="brand-foot">安全 · 稳定 · 有人情味</div>
+        </section>
+
+        <section class="login-form">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h2>欢迎回来</h2>
+            <p class="form-sub">登录你的工作空间，继续未完成的对话。</p>
+
+            <div class="field">
+                <label for="username">用户名</label>
+                <div class="input-wrap">
+                    <svg class="input-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                    <input type="text" id="username" placeholder="请输入用户名" value="奶龙">
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="password">密码</label>
+                <div class="input-wrap">
+                    <svg class="input-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+                    <input type="password" id="password" placeholder="请输入密码" value="666">
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="connectAndLogin()">
+                <span>进入工作空间</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+            </button>
+
+            <div id="status-text" class="status-pill">
+                <span class="status-dot"></span>
+                <span id="status-label">终端离线</span>
+            </div>
+
+            <p class="form-note">首次登录将自动为你创建账号。</p>
+        </section>
+    </main>
 
     <div id="app-container">
-        <div id="sidebar">
-            <div class="sidebar-header">
-                频道网格 (<span id="my-name" style="color: #c084fc;"></span>)
-                <button onclick="logout()" style="float:right; background:rgba(239, 68, 68, 0.2); color:#fca5a5;">登出</button>
-                <button onclick="getRooms()" style="float:right; margin-right:6px;">刷新</button>
+        <aside id="sidebar">
+            <div class="side-brand">
+                <span class="brand-mark small" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3.2c1.5 2.1 2.4 3.9 2.4 5.7a2.4 2.4 0 1 1-4.8 0c0-1.8.9-3.6 2.4-5.7Z"/>
+                        <path d="M6.7 11.6A5.6 5.6 0 0 0 12 21a5.6 5.6 0 0 0 5.3-9.4"/>
+                    </svg>
+                </span>
+                <div>
+                    <div class="side-brand-name">暖屿</div>
+                    <div class="side-brand-sub">HEARTH WORKSPACE</div>
+                </div>
             </div>
-            <ul id="room-list"></ul>
-            <div class="create-room-box">
-                <input type="text" id="new-room-name" placeholder="新建频道名称">
-                <input type="text" id="new-room-members" placeholder="邀请成员 (逗号分隔)">
-                <button class="btn" style="padding:6px; font-size:13px; margin-top:2px;" onclick="createRoom()">建立跃迁频道</button>
-            </div>
-        </div>
 
-        <div id="chat-area">
-            <div id="chat-header">请选择一个星域频道</div>
-            <div id="messages" class="empty-state">等待接入量子通讯流...</div>
-            <div id="input-area" style="display:none;">
-                <input type="text" id="msg-input" placeholder="输入你想传递的星际讯息..." onkeypress="if(event.keyCode==13) sendMsg()">
-                <button onclick="sendMsg()">发送</button>
+            <div class="me-card">
+                <span class="avatar" id="my-avatar">暖</span>
+                <div class="me-info">
+                    <span class="me-name" id="my-name"></span>
+                    <span class="me-status"><i></i>在线</span>
+                </div>
+                <button class="icon-btn ghost" title="登出" onclick="logout()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h9"/></svg>
+                </button>
             </div>
-        </div>
+
+            <div class="side-section">
+                <span class="section-label">频道</span>
+                <button class="icon-btn tiny" title="刷新频道" onclick="getRooms()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8 8 0 1 0-.7 4.5"/><path d="M20 5v6h-6"/></svg>
+                </button>
+            </div>
+
+            <ul id="room-list"></ul>
+
+            <div class="create-room-box">
+                <h4>新建频道</h4>
+                <input type="text" id="new-room-name" placeholder="频道名称">
+                <input type="text" id="new-room-members" placeholder="邀请成员，逗号分隔">
+                <button class="btn-secondary" onclick="createRoom()">创建频道</button>
+            </div>
+        </aside>
+
+        <section id="chat-area">
+            <header id="chat-header">
+                <div class="room-identity">
+                    <div class="room-badge" id="room-badge">#</div>
+                    <div class="room-titles">
+                        <h3 id="room-title">请选择一个频道</h3>
+                        <p id="room-subtitle">从左侧开始一段对话</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" title="刷新频道" onclick="getRooms()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8 8 0 1 0-.7 4.5"/><path d="M20 5v6h-6"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div id="messages" class="empty-state">
+                <div class="empty-inner">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a7.5 7.5 0 0 1-10.9 6.7L4.5 19.5l1.3-4.1A7.5 7.5 0 1 1 20.5 11.5Z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>
+                    </div>
+                    <h4>开始一段有温度的对话</h4>
+                    <p>选择一个频道，或创建一个新的频道</p>
+                </div>
+            </div>
+
+            <div id="input-area" style="display:none;">
+                <div class="composer">
+                    <input type="text" id="msg-input" placeholder="输入消息，按 Enter 发送…" onkeypress="if(event.keyCode==13) sendMsg()">
+                    <button class="send-btn" onclick="sendMsg()">
+                        <span>发送</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 11.5 16-7-4.5 16-4-6.5-7.5-2.5Z"/><path d="m11 14 4-4"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script>
         // ==================== 全局配置 ====================
-        const SERVER_IP = "111.230.232.136";   // 改这里即可
         const SERVER_PORT = 8080;
-        const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}`;
+        const SERVER_HOST = location.hostname || "115.159.39.51"; // 自动跟随页面访问地址
+        const WS_URL = `ws://${SERVER_HOST}:${SERVER_PORT}`;
         // ==================================================
 
         let ws = null;
@@ -122,6 +473,10 @@
         let currentUser = "";
         let currentRoomId = null;
         let heartbeatTimer = null;
+        let rooms = {};
+
+        const messagesEl = document.getElementById("messages");
+        const emptyStateHtml = messagesEl.innerHTML;
 
         function getReqId() { return "req_" + (++reqIdCounter); }
 
@@ -132,68 +487,114 @@
             ws.send(JSON.stringify(payload));
         }
 
+        function setStatus(text, state = "") {
+            const pill = document.getElementById("status-text");
+            const label = document.getElementById("status-label");
+            if (label) label.textContent = text;
+            if (pill) {
+                pill.classList.remove("is-online", "is-error", "is-pending");
+                if (state) pill.classList.add(state);
+            }
+        }
+
+        function showLogin(text, state) {
+            document.getElementById("login-container").style.display = "flex";
+            document.getElementById("app-container").style.display = "none";
+            if (text) setStatus(text, state);
+        }
+
+        function showApp() {
+            document.getElementById("login-container").style.display = "none";
+            document.getElementById("app-container").style.display = "flex";
+        }
+
+        function avatarHue(name) {
+            const str = name || "?";
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) % 100000;
+            return 8 + (hash % 42);
+        }
+
+        function setAvatar(el, name) {
+            const str = name || "?";
+            el.textContent = (Array.from(str)[0] || "?").toUpperCase();
+            const hue = avatarHue(str);
+            el.style.background = `linear-gradient(135deg, hsl(${hue} 82% 88%), hsl(${hue + 8} 74% 78%))`;
+            el.style.color = `hsl(${hue} 52% 30%)`;
+        }
+
         function connectAndLogin() {
             const user = document.getElementById("username").value.trim();
             const pass = document.getElementById("password").value.trim();
-            if (!user || !pass) return alert("请输入旅行者代号与通行秘钥！");
+            if (!user || !pass) return alert("请输入用户名与密码！");
 
-            document.getElementById("status-text").innerText = "正在建立量子通道 " + WS_URL + " ...";
-            
-            if (ws) ws.close();
-            if (heartbeatTimer) clearInterval(heartbeatTimer);
+            setStatus("正在建立连接 " + WS_URL + " ...", "is-pending");
+
+            if (ws) { ws.onclose = null; ws.close(); ws = null; }
+            if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
 
             ws = new WebSocket(WS_URL);
 
             ws.onopen = () => {
-                document.getElementById("status-text").innerText = "通道已连接，正在校验身份...";
+                setStatus("连接已建立，正在校验身份…", "is-pending");
                 currentUser = user;
                 sendWsMsg("login/register/logout", { name: user, password: pass });
 
                 heartbeatTimer = setInterval(() => {
-                    if (ws && ws.readyState === WebSocket.OPEN) sendWsMsg("ping"); 
+                    if (ws && ws.readyState === WebSocket.OPEN) sendWsMsg("ping");
                 }, 5000);
             };
 
             ws.onmessage = (event) => {
-                const res = JSON.parse(event.data);
-                if (res.action === "ping") return; 
+                let res;
+                try { res = JSON.parse(event.data); } catch (e) { return; }
+                if (res.action === "ping") return;
                 handleServerMessage(res);
             };
 
             ws.onclose = () => {
-                if (heartbeatTimer) clearInterval(heartbeatTimer);
-                if (currentUser !== "") {
-                    document.getElementById("status-text").innerText = "连接已断开";
-                    document.getElementById("login-container").style.display = "block";
-                    document.getElementById("app-container").style.display = "none";
-                }
+                if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+                if (currentUser !== "") showLogin("连接已断开", "is-error");
             };
-            ws.onerror = () => { document.getElementById("status-text").innerText = "量子通道构建失败！"; };
+            ws.onerror = () => { setStatus("连接失败，请稍后重试", "is-error"); };
         }
 
         function logout() {
-            if (ws) { ws.close(); ws = null; }
             if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
-            currentUser = ""; currentRoomId = null;
-            document.getElementById("app-container").style.display = "none";
-            document.getElementById("login-container").style.display = "block";
-            document.getElementById("status-text").innerText = "终端已断开";
+            currentUser = "";
+            currentRoomId = null;
+            rooms = {};
+            if (ws) { ws.onclose = null; ws.close(); ws = null; }
+
+            document.getElementById("room-list").innerHTML = "";
+            messagesEl.className = "empty-state";
+            messagesEl.innerHTML = emptyStateHtml;
+            document.getElementById("input-area").style.display = "none";
+            document.getElementById("room-title").textContent = "请选择一个频道";
+            document.getElementById("room-subtitle").textContent = "从左侧开始一段对话";
+            document.getElementById("room-badge").textContent = "#";
+            document.getElementById("my-name").textContent = "";
+            document.getElementById("my-avatar").textContent = "";
+            document.getElementById("msg-input").value = "";
+
+            showLogin("终端已断开", "");
         }
 
         function handleServerMessage(res) {
             if (res.status === "error" || res.status === "fail") {
-                alert("虚空反馈异常: " + res.message);
+                alert("操作失败：" + res.message);
                 return;
             }
 
             switch (res.action) {
                 case "login/register/logout":
-                    document.getElementById("login-container").style.display = "none";
-                    document.getElementById("app-container").style.display = "flex";
-                    document.getElementById("my-name").innerText = currentUser;
-                    getRooms(); 
+                    showApp();
+                    document.getElementById("my-name").textContent = currentUser;
+                    setAvatar(document.getElementById("my-avatar"), currentUser);
+                    setStatus("已连接到工作空间", "is-online");
+                    getRooms();
                     break;
-                
+
                 case "get_rooms":
                     renderRoomList(res.data.rooms);
                     break;
@@ -202,11 +603,14 @@
                     renderMessages(res.data.messages);
                     break;
 
-                case "send_msg":
-                    const content = document.getElementById("msg-input").value;
+                case "send_msg": {
+                    const input = document.getElementById("msg-input");
+                    const content = input.value;
                     appendMessage(currentUser, content, true);
-                    document.getElementById("msg-input").value = "";
+                    input.value = "";
+                    input.focus();
                     break;
+                }
 
                 case "receive_room":
                     appendRoom(res.data.room_id, res.data.room_name, true);
@@ -216,16 +620,22 @@
                     if (res.data.room_id == currentRoomId) {
                         appendMessage(res.data.sender_name, res.data.content, false);
                     } else {
-                        const unreadRoom = document.getElementById(`room-${res.data.room_id}`);
-                        if (unreadRoom && !unreadRoom.innerText.includes("💬")) {
-                            unreadRoom.innerHTML += ` <span style="color:#fbcfe8; font-size:12px;">💬</span>`;
+                        if (!rooms[res.data.room_id]) {
+                            rooms[res.data.room_id] = {
+                                id: res.data.room_id,
+                                name: res.data.room_name || ("频道 " + res.data.room_id),
+                                unread: 0,
+                                isNew: false
+                            };
                         }
+                        rooms[res.data.room_id].unread = (rooms[res.data.room_id].unread || 0) + 1;
+                        renderRooms();
                     }
                     break;
 
                 case "create_room":
-                    alert("跃迁频道创建成功！");
-                    getRooms(); 
+                    alert("频道创建成功！");
+                    getRooms();
                     break;
             }
         }
@@ -233,33 +643,36 @@
         function getRooms() { sendWsMsg("get_rooms"); }
 
         function createRoom() {
-            const name = document.getElementById("new-room-name").value.trim();
-            const memStr = document.getElementById("new-room-members").value.trim();
+            const nameEl = document.getElementById("new-room-name");
+            const memEl = document.getElementById("new-room-members");
+            const name = nameEl.value.trim();
+            const memStr = memEl.value.trim();
             if (!name) return alert("频道名称不能为空");
-            
+
             let members = memStr.split(/[,，]/).map(s => s.trim()).filter(s => s !== "");
-            if (!members.includes(currentUser)) members.push(currentUser); 
+            if (!members.includes(currentUser)) members.push(currentUser);
+
             sendWsMsg("create_room", { room_name: name, members: members });
+            nameEl.value = "";
+            memEl.value = "";
         }
 
         function selectRoom(roomId, roomName) {
             currentRoomId = roomId;
-            document.getElementById("chat-header").innerText = `当前星域: ${roomName} (ID: ${roomId})`;
-            
-            const msgBox = document.getElementById("messages");
-            msgBox.innerHTML = ""; 
-            msgBox.classList.remove("empty-state");
-            document.getElementById("input-area").style.display = "flex";
-
-            document.querySelectorAll('.room-item').forEach(el => {
-                el.classList.remove('active');
-            });
-            const activeRoom = document.getElementById(`room-${roomId}`);
-            if (activeRoom) {
-                activeRoom.classList.add('active');
-                activeRoom.innerText = "✦ " + roomName;
+            if (rooms[roomId]) {
+                rooms[roomId].unread = 0;
+                rooms[roomId].isNew = false;
             }
 
+            document.getElementById("room-title").textContent = roomName;
+            document.getElementById("room-subtitle").textContent = `频道 ID · ${roomId}`;
+            document.getElementById("room-badge").textContent = (Array.from(roomName || "#")[0] || "#");
+
+            messagesEl.innerHTML = "";
+            messagesEl.classList.remove("empty-state");
+            document.getElementById("input-area").style.display = "flex";
+
+            renderRooms();
             sendWsMsg("pull_room_history", { room_id: roomId });
         }
 
@@ -270,57 +683,119 @@
             sendWsMsg("send_msg", { room_id: currentRoomId, content: content });
         }
 
-        function appendRoom(roomId, roomName, isNew = false) {
+        function renderRooms() {
             const ul = document.getElementById("room-list");
-            if (ul.innerHTML.includes("暂无星域频道")) ul.innerHTML = "";
-            if (document.getElementById(`room-${roomId}`)) return;
-
-            const li = document.createElement("li");
-            li.className = "room-item";
-            li.id = `room-${roomId}`;
-            
-            if (isNew) {
-                li.innerHTML = `✦ ${roomName} <span style="color:#f472b6; font-size:12px; margin-left:4px;">🆕</span>`;
-            } else {
-                li.innerText = "✦ " + roomName;
-            }
-
-            li.onclick = () => selectRoom(roomId, roomName);
-            ul.appendChild(li);
-        }
-
-        function renderRoomList(rooms) {
-            const ul = document.getElementById("room-list");
+            const ids = Object.keys(rooms);
             ul.innerHTML = "";
-            if(!rooms || rooms.length === 0) {
-                ul.innerHTML = "<div style='padding:15px;color:#64748b;text-align:center;'>暂无星域频道</div>";
+
+            if (ids.length === 0) {
+                const empty = document.createElement("li");
+                empty.className = "room-empty";
+                empty.textContent = "暂无频道，先创建一个吧";
+                ul.appendChild(empty);
                 return;
             }
-            rooms.forEach((room, index) => {
-                appendRoom(room.id, room.name);
-                if (index === 0) selectRoom(room.id, room.name);
+
+            ids.forEach(id => {
+                const room = rooms[id];
+                const li = document.createElement("li");
+                li.className = "room-item" + (String(room.id) === String(currentRoomId) ? " active" : "");
+                li.id = `room-${room.id}`;
+                li.onclick = () => selectRoom(room.id, room.name);
+
+                const icon = document.createElement("span");
+                icon.className = "room-icon";
+                icon.textContent = (Array.from(room.name || "#")[0] || "#");
+
+                const name = document.createElement("span");
+                name.className = "room-name";
+                name.textContent = room.name;
+
+                const badges = document.createElement("span");
+                badges.className = "room-badges";
+                if (room.isNew) {
+                    const badge = document.createElement("span");
+                    badge.className = "new-pill";
+                    badge.textContent = "新";
+                    badges.appendChild(badge);
+                }
+                if (room.unread) {
+                    const dot = document.createElement("span");
+                    dot.className = "unread-dot";
+                    badges.appendChild(dot);
+                }
+
+                li.append(icon, name, badges);
+                ul.appendChild(li);
             });
+        }
+
+        function appendRoom(roomId, roomName, isNew = false) {
+            rooms[roomId] = { id: roomId, name: roomName, unread: 0, isNew: isNew };
+            renderRooms();
+        }
+
+        function renderRoomList(list) {
+            rooms = {};
+            (list || []).forEach(room => {
+                rooms[room.id] = { id: room.id, name: room.name, unread: 0, isNew: false };
+            });
+
+            if (!list || list.length === 0) {
+                currentRoomId = null;
+                renderRooms();
+                return;
+            }
+
+            renderRooms();
+            if (currentRoomId === null || !rooms[currentRoomId]) {
+                selectRoom(list[0].id, list[0].name);
+            }
         }
 
         function renderMessages(messages) {
-            const msgBox = document.getElementById("messages");
-            msgBox.innerHTML = "";
-            if(!messages || messages.length === 0) return;
-            
-            messages.reverse().forEach(msg => {
-                let isSelf = (msg.sender_name === currentUser);
-                appendMessage(msg.sender_name, msg.content, isSelf);
+            messagesEl.innerHTML = "";
+            messagesEl.classList.remove("empty-state");
+
+            if (!messages || messages.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "chat-empty";
+                empty.innerHTML = '<div class="empty-icon small"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a7.5 7.5 0 0 1-10.9 6.7L4.5 19.5l1.3-4.1A7.5 7.5 0 1 1 20.5 11.5Z"/></svg></div><h4>这里还很安静</h4><p>发送第一条消息，开始这段对话。</p>';
+                messagesEl.appendChild(empty);
+                return;
+            }
+
+            messages.slice().reverse().forEach(msg => {
+                appendMessage(msg.sender_name, msg.content, msg.sender_name === currentUser);
             });
+            messagesEl.scrollTop = messagesEl.scrollHeight;
         }
 
         function appendMessage(senderName, content, isSelf) {
-            const msgBox = document.getElementById("messages");
-            const div = document.createElement("div");
-            div.className = "msg-box " + (isSelf ? "msg-self" : "msg-other");
-            const displayName = isSelf ? senderName + " (我)" : senderName;
-            div.innerHTML = `<span class="msg-sender">${displayName}</span>${content}`;
-            msgBox.appendChild(div);
-            msgBox.scrollTop = msgBox.scrollHeight;
+            const row = document.createElement("div");
+            row.className = "msg-row" + (isSelf ? " self" : "");
+
+            const avatar = document.createElement("span");
+            avatar.className = "avatar msg-avatar";
+            setAvatar(avatar, senderName);
+
+            const body = document.createElement("div");
+            body.className = "msg-body";
+
+            const meta = document.createElement("div");
+            meta.className = "msg-meta";
+            meta.textContent = isSelf ? senderName + " (我)" : senderName;
+
+            const bubble = document.createElement("div");
+            bubble.className = "msg-bubble";
+            bubble.textContent = content;
+
+            body.append(meta, bubble);
+            row.append(avatar, body);
+
+            const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 90;
+            messagesEl.appendChild(row);
+            if (nearBottom || isSelf) messagesEl.scrollTop = messagesEl.scrollHeight;
         }
     </script>
 </body>
